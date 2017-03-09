@@ -147,13 +147,32 @@ all.site.rich <- lapply(data.list, function(x){
 # Function for plotting catch curves.
 library(ggplot2)
 plot.this <- function(metrics.df, metric.col){
-  ggplot(metrics.df, aes_string("SAMPLE_COUNT", metric.col)) + 
-    labs(title = unique(metrics.df$STATION_ID)) +
-    theme(plot.title = element_text(hjust = 0.5)) +
-    scale_x_continuous(breaks = seq(0, 1600, 100)) +
-    geom_point() + 
-    stat_smooth(method = "loess")
+  agg.df <- aggregate(metrics.df[, metric.col] ~ SAMPLE_COUNT, data = metrics.df, FUN = sd)
+  agg.df$MEAN <- aggregate(metrics.df[, metric.col] ~ SAMPLE_COUNT, data = metrics.df, FUN = mean)[[2]]
+  names(agg.df) <- c("SAMPLE_COUNT", "SD", "MEAN")
+  agg.df$MIN <- agg.df$MEAN - agg.df$SD
+  agg.df$MAX <- agg.df$MEAN + agg.df$SD
+  limits <- aes(ymax = agg.df$MIN, ymin = agg.df$MAX)
+  
+  ggplot(agg.df, aes(SAMPLE_COUNT, MEAN)) + 
+    labs(title = unique(metrics.df$STATION_ID),
+         x = "Sample Count",
+         y = metric.col) +
+    theme(plot.title = element_text(hjust = 0.5),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.background = element_blank(),
+          axis.line = element_line(colour = "black")) +
+    scale_x_continuous(breaks = seq(0, 1600, 100), limits = c(0, 1600)) +
+    #geom_point() + 
+    #stat_smooth(method = "loess") +
+    geom_line() +
+    geom_errorbar(limits, width = 30)
+    #geom_errorbar(width=0.25)
 }
+
+
+plot.this(metrics.df, "RICH")
 #==============================================================================
 # Use this to generate Richness plots for each river reach.
 lapply(all.site.rich, function(x){
