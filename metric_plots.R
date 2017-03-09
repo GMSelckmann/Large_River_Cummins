@@ -84,7 +84,22 @@ prep_rare <- function(wide.df, reach_year, num.itr){
   return(final.df)
 }
 #==============================================================================
-rare.df <- prep_rare(wide.df, "CR_2012", 1000)
+# Carderock Samples
+rare.CR_2012 <- prep_rare(wide.df, "CR_2012", 10)
+rare.CR_2013 <- prep_rare(wide.df, "CR_2013", 10)
+rare.CR_2014 <- prep_rare(wide.df, "CR_2014", 10)
+# Knoxville Samples
+rare.KX_2012 <- prep_rare(wide.df, "KX_2012", 10)
+rare.KX_2013 <- prep_rare(wide.df, "KX_2013", 10)
+rare.KX_2014 <- prep_rare(wide.df, "KX_2014", 10)
+# Little Falls Samples
+rare.LF_2012 <- prep_rare(wide.df, "LF_2012", 10)
+rare.LF_2013 <- prep_rare(wide.df, "LF_2013", 10)
+rare.LF_2014 <- prep_rare(wide.df, "LF_2014", 10)
+# Make list of all the data frames
+data.list <- list(rare.CR_2012, rare.CR_2013, rare.CR_2014,
+                  rare.KX_2012, rare.KX_2013, rare.KX_2014,
+                  rare.LF_2012, rare.LF_2013, rare.LF_2014)
 #==============================================================================
 # Calculate Metrics
 #==============================================================================
@@ -93,17 +108,41 @@ rare.df <- prep_rare(wide.df, "CR_2012", 1000)
 # a Beck column or a Habit column. This is not an error, it is just letting you
 # know that if you were to add these columns to the NYSDEC master taxa list
 # you would get a few more metrics.
-metrics.df <- Benthos::all_metrics(rare.df, master, "GENUS", 
+
+# Use this script to run all metrics for an individual reach.
+metrics.df <- Benthos::all_metrics(rare.CR_2012, master, "GENUS", 
                                    tv.col = "BIBI_TV",
                                    ffg.col = "BIBI_FFG",
                                    hab.col = "BIBI_HABIT")
 metrics.df$SAMPLE_COUNT <- as.numeric(gsub("\\..*","", metrics.df$UNIQUE_ID))
+
+# Use this script to run all metrics for all reaches.
+all.site.metrics <- lapply(data.list, function(x){
+  metrics.df <- Benthos::all_metrics(rare.df, master, "GENUS", 
+                                     tv.col = "BIBI_TV",
+                                     ffg.col = "BIBI_FFG",
+                                     hab.col = "BIBI_HABIT")
+  metrics.df$SAMPLE_COUNT <- as.numeric(gsub("\\..*","", metrics.df$UNIQUE_ID))
+  return(metrics.df)
+})
 #==============================================================================
 # Calculate Richness
-wide.rare <- wide(rare.df, "GENUS")
+
+# Use this script to calulate richness for one river reach.
+wide.rare <- wide(rare.CR_2012, "GENUS")
 metrics.df <- wide.rare[, 1:7]
 metrics.df$RICH <- vegan::specnumber(wide.rare[, 8:ncol(wide.rare)])
 metrics.df$SAMPLE_COUNT <- as.numeric(gsub("\\..*","", metrics.df$UNIQUE_ID))
+
+# Use this script to calculate richness for all reaches.
+all.site.rich <- lapply(data.list, function(x){
+  wide.rare <- wide(x, "GENUS")
+  metrics.df <- wide.rare[, 1:7]
+  metrics.df$RICH <- vegan::specnumber(wide.rare[, 8:ncol(wide.rare)])
+  metrics.df$SAMPLE_COUNT <- as.numeric(gsub("\\..*","", metrics.df$UNIQUE_ID))
+  return(metrics.df)
+})
+
 #==============================================================================
 # Function for plotting catch curves.
 library(ggplot2)
@@ -116,7 +155,12 @@ plot.this <- function(metrics.df, metric.col){
     stat_smooth(method = "loess")
 }
 #==============================================================================
+# Use this to generate Richness plots for each river reach.
+lapply(all.site.rich, function(x){
+  plot.this(x, "RICH")
+})
 
+# Use this to geneerate Richness plots for one river reach.
 plot.this(metrics.df, "RICH")
 plot.this(metrics.df, "PCT_ELMIDAE")
 plot.this(metrics.df, "PCT_EPT")
