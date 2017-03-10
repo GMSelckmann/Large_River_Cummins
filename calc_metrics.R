@@ -28,8 +28,21 @@ data(master)
 jim.df <- read.csv("data/large_river_cummins_taxa.csv")
 # Fill the space between the genus and species name with "_"
 jim.df$FINAL_ID <- gsub(" ","_", jim.df$FINAL_ID)
+
+#==============================================================================
+id_sub_rank <- function(taxon, taxon.rank, master.df){
+  sub.master <- master.df[master.df[, taxon.rank] %in% taxon, ]
+  fill.master <- fill_taxa(sub.master)
+  final.vec <- unique(fill.master$SPECIES)
+  return(final.vec)
+}
+#==============================================================================
+chiro.taxa <- id_sub_rank("CHIRONOMIDAE", "FAMILY", master)
+# Roll sub-ranks of Chrinomidae up to Chironomidae.
+jim.df$FINAL_ID <- ifelse(jim.df$FINAL_ID %in% chiro.taxa, "CHIRONOMIDAE", jim.df$FINAL_ID)
 # Merge the taxonomic counts with the master taxa list.
 jim.final <- Benthos::data_prep(jim.df, master)
+# Fill in NAs with the previous taxonomic resolution.
 jim.final <- Benthos::fill_taxa(jim.final)
 #==============================================================================
 #==============================================================================
