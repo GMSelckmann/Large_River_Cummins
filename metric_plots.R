@@ -28,19 +28,19 @@ wide.df <- Benthos::wide(reach.df, "GENUS")
 source("large_river_functions.R")
 #==============================================================================
 # Carderock Samples
-rare.CR_2012 <- prep_rare(wide.df, "CR_2012", 10)
-rare.CR_2013 <- prep_rare(wide.df, "CR_2013", 10)
-rare.CR_2014 <- prep_rare(wide.df, "CR_2014", 10)
+system.time(rare.CR_2012 <- prep_rare(wide.df, "CR_2012", 100))
+rare.CR_2013 <- prep_rare(wide.df, "CR_2013", 100)
+rare.CR_2014 <- prep_rare(wide.df, "CR_2014", 100)
 cr.reach <- rbind(rare.CR_2012, rare.CR_2013, rare.CR_2014)
 # Knoxville Samples
-rare.KX_2012 <- prep_rare(wide.df, "KX_2012", 10)
-rare.KX_2013 <- prep_rare(wide.df, "KX_2013", 10)
-rare.KX_2014 <- prep_rare(wide.df, "KX_2014", 10)
+rare.KX_2012 <- prep_rare(wide.df, "KX_2012", 100)
+rare.KX_2013 <- prep_rare(wide.df, "KX_2013", 100)
+rare.KX_2014 <- prep_rare(wide.df, "KX_2014", 100)
 kx.reach <- rbind(rare.KX_2012, rare.KX_2013, rare.KX_2014)
 # Little Falls Samples
-rare.LF_2012 <- prep_rare(wide.df, "LF_2012", 10)
-rare.LF_2013 <- prep_rare(wide.df, "LF_2013", 10)
-rare.LF_2014 <- prep_rare(wide.df, "LF_2014", 10)
+rare.LF_2012 <- prep_rare(wide.df, "LF_2012", 100)
+rare.LF_2013 <- prep_rare(wide.df, "LF_2013", 100)
+rare.LF_2014 <- prep_rare(wide.df, "LF_2014", 100)
 lf.reach <- rbind(rare.LF_2012, rare.LF_2013, rare.LF_2014)
 
 all.reach <- list(cr.reach, kx.reach, lf.reach)
