@@ -12,7 +12,7 @@
 # Install and load the Benthos package
 #==============================================================================
 # Install the Benthos package.
-devtools::install_github("zsmith27/Benthos", force = TRUE)
+#devtools::install_github("zsmith27/Benthos", force = TRUE)
 # Load the Benthos package.
 library(Benthos)
 # Load the Master Taxa List contained within the Benthos package.
@@ -27,7 +27,7 @@ wide.df <- Benthos::wide(reach.df, "GENUS")
 #==============================================================================
 source("large_river_functions.R")
 #==============================================================================
-samp.size = 200
+samp.size = 1000
 #==============================================================================
 # Carderock Samples
 system.time(rare.CR_2012 <- prep_rare(wide.df, "CR_2012", samp.size))
