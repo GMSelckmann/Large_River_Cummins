@@ -30,6 +30,10 @@ station_year.df <- pct_change(metrics.df, metrics.vec, "STATION_YEAR")
 #==============================================================================
 rich.plot <- plot_pct_change(all.df, metrics.vec, "rich")
 pct.plot <- plot_pct_change(all.df, metrics.vec, "pct")
+#==============================================================================
+setwd("C:/Users/zsmith/Desktop/Large_River/Jim_Cummins/Large_River_Cummins/output/5_4_17")
+png("pct_change.png", width = 5.5, height = 7.5, units = "in", res = 1200)
 grid.newpage()
 grid.draw(rbind(ggplotGrob(rich.plot), ggplotGrob(pct.plot), size = "last"))
+dev.off()
 #==============================================================================

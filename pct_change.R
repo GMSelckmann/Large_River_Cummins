@@ -111,6 +111,7 @@ plot_pct_change <- function(metrics.df, metrics.vec, metric.type) {
                                                       "RICH_TRICHOPTERA", "RICH_DIPTERA"), ]
     limits.vec <- c(0, 20)
     breaks.vec <- seq(0, 20, 5)
+    leg.cols <- 1
   }
   
   if (metric.type %in% "pct") {
@@ -119,6 +120,7 @@ plot_pct_change <- function(metrics.df, metrics.vec, metric.type) {
                                                        "PCT_NON_TANYTARSINI_NON_INSECTA"), ]
     limits.vec <- c(0, 10)
     breaks.vec <- seq(0, 10, 2)
+    leg.cols <- 2
   }
   #----------------------------------------------------------------------------
   # Colorblind palette.
@@ -129,7 +131,7 @@ plot_pct_change <- function(metrics.df, metrics.vec, metric.type) {
   sub.metric <- sub.metric[sub.metric$SAMPLE_NUMBER <= 1000, ]
   sub.metric <- name_change(sub.metric)
   ggplot(sub.metric, aes(SAMPLE_NUMBER, PCT_DIFF, group = METRIC,
-                         color = METRIC, shape = METRIC)) + 
+                         color = METRIC)) + 
     labs(#title = plot.title,
       x = "Sample Count",
       y = "Percent Change (%)") +
@@ -141,13 +143,13 @@ plot_pct_change <- function(metrics.df, metrics.vec, metric.type) {
           axis.line = element_line(colour = "black"),
           legend.key = element_rect(fill = "white"),
           legend.title = element_blank(),
-          legend.text = element_text(size = 8),
+          legend.text = element_text(size = 6),
           legend.justification = c(1, 1),
           legend.position = c(1, 1)
           #legend.position="top"
           ) +
     #guides(fill = guide_legend(ncol = 2)) +
-    guides(col = guide_legend(ncol = 2)) +
+    guides(col = guide_legend(ncol = leg.cols)) +
     scale_colour_manual(values = colorblind) +
     #scale_x_continuous(breaks = seq(0, 2000, 200), limits = c(0, 2000)) +
     scale_x_continuous(breaks = seq(0, 1000, 200), limits = c(0, 1100)) +
@@ -156,7 +158,7 @@ plot_pct_change <- function(metrics.df, metrics.vec, metric.type) {
     scale_y_continuous(breaks = breaks.vec, expand = c(0, 0), limits = limits.vec) +
     #geom_point() + 
     #stat_smooth(method = "loess") +
-    geom_line(size = 1) +
+    geom_line(size = 0.7) +
     geom_errorbar(aes(ymax = sub.metric$PCT_DIFF + sub.metric$SD,
                       ymin = sub.metric$PCT_DIFF - sub.metric$SD),
                   width = 30, size = 0.7) +
