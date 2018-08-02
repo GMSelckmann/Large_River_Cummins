@@ -1,0 +1,127 @@
+---
+title: "Untitled"
+author: "Zachary M. Smith"
+date: "July 25, 2018"
+output: html_document
+---
+
+## Parametric Tests: Reach by Year
+
+Generate a metric key. This data frame will represent sample information, like `reach`, `bank`, and `year`, that the metric values will be appended to.
+```{r}
+metrics.key <- standard.df %>% 
+  select(unique_id, reach_year, reach, bank, year) %>% 
+  distinct()
+```
+
+### Calculate Metrics
+
+Calculate the metrics of interest using the __mmir__ package functions.
+```{r}
+metrics.df <- metrics.key %>% 
+  mutate(rich = taxa_rich(standard.df, unique_id, genus),
+         rich_ephemeroptera = taxa_rich(standard.df, unique_id, order, genus, "ephemeroptera"),
+         rich_trichoptera = taxa_rich(standard.df, unique_id, order, genus, "trichoptera"),
+         rich_diptera = taxa_rich(standard.df, unique_id, order, genus, "diptera"),
+         pct_chironomidae = taxa_pct(standard.df, unique_id, count,
+                                     taxon.col = family, taxon = "chironomidae"),
+         pct_corbiculidae = taxa_pct(standard.df, unique_id, count,
+                                     taxon.col = family, taxon = "corbiculidae"),
+         pct_elmidae = taxa_pct(standard.df, unique_id, count,
+                                taxon.col = family, taxon = "elmidae"),
+         pct_hydropsychidae = taxa_pct(standard.df, unique_id, count,
+                                       taxon.col = family, taxon = "hydropsychidae"),
+         pct_ephemeroptera = taxa_pct(standard.df, unique_id, count,
+                                      taxon.col = order, taxon = "ephemeroptera"),
+         pct_plecoptera = taxa_pct(standard.df, unique_id, count,
+                                   taxon.col = order, taxon = "plecoptera"),
+         pct_trichoptera = taxa_pct(standard.df, unique_id, count,
+                                    taxon.col = order, taxon = "trichoptera"),
+         pct_ept = taxa_pct(standard.df, unique_id, count,
+                            taxon.col = order, taxon = c("ephemeroptera", 
+                                                         "plecoptera",
+                                                         "trichoptera"))
+  )
+```
+
+Identify the metrics of interest and the reaches of interest.
+```{r}
+metrics.vec <- c("rich", "rich_ephemeroptera", "rich_trichoptera",
+                 "rich_diptera", "pct_chironomidae",
+                 "pct_corbiculidae",
+                 "pct_elmidae", "pct_hydropsychidae", "pct_ephemeroptera",
+                 "pct_plecoptera", "pct_trichoptera", "pct_ept")
+reach.vec <- unique(metrics.df$reach)
+```
+
+### Kruskal-Wallis and post hoc Dunn's Test
+
+For each metric, run the Kruskal-Wallis and post hoc Dunn's test to compare the values from each reaches collection year. The values are stored in a dataframe. Keep in mind that the Kruskal-Wallis p-value (`kruskal_p`) must be < α before it is appropriate to review the Dunn's test adjusted p-value (`dunn_adjusted_p`).
+```{r}
+dunn.df <- map_df(metrics.vec, function(metric.i){
+  map_df(reach.vec, function(reach.i) {
+    metrics.sub <- metrics.df %>% 
+      filter(reach  == reach.i) %>% 
+      mutate(reach_year = as.factor(reach_year)) %>% 
+      rename(metric = metric.i)
+    
+    kruskal.df <- kruskal.test(metric ~ as.factor(reach_year), data = metrics.sub) %>%
+      broom::tidy() %>%
+      mutate(metric = metric.i,
+             reach = reach.i) %>%
+      select(reach, metric, everything())
+    
+    final.df <- dunn.test::dunn.test(metrics.sub$metric, metrics.sub$reach_year)
+    final.df <- tibble(
+      metric = metric.i,
+      kruskal_p = kruskal.df$p.value,
+      kruskal_stat = kruskal.df$statistic,
+      dunn_comparisons = final.df$comparisons,
+      dunn_p_adjusted = final.df$P.adjusted,
+      dunn_p_value = final.df$P,
+      dunn_z_score = final.df$Z,
+      dunn_chi2 = final.df$chi2
+    )
+  })
+})
+
+DT::datatable(dunn.df)
+
+```
+
+### Boxplots
+
+Transform the dataframe from a wide data format to a long data format.
+```{r}
+long.df <- metrics.df %>% 
+  gather(metric, value, rich:pct_ept)
+```
+
+Generate boxplots for each reach and metric. The values are grouped by collection year.
+```{r, fig.width=8, fig.height=20}
+long.df %>% 
+  ggplot(aes(as.factor(year), value)) +
+  geom_boxplot() +
+  facet_wrap(~ reach + metric, ncol = 3, scales = "free")
+```
+
+### Percentiles of Interest
+
+Calculate the percentiles of interest for each reach and metric. Additionally, a `lower_fence` and `upper_fence` are calculated by multiplying the interquartile range by 1.5 and then either subtracting this values from the 25th percentile or adding this value to the 75th percentile.
+```{r}
+percentiles.df <- long.df %>% 
+  group_by(reach, metric) %>% 
+  summarize(iqr = IQR(value),
+            quant10 = quantile(value, 0.10),
+            quant25 = quantile(value, 0.25),
+            quant75 = quantile(value, 0.75),
+            quant90 = quantile(value, 0.90),
+            lower_fence = quant25 - iqr * 1.5,
+            upper_fence = quant75 + iqr * 1.5
+  ) %>% 
+  ungroup() %>% 
+  select(reach, metric, lower_fence, quant10, quant25, quant75, quant90, upper_fence)
+
+DT::datatable(percentiles.df)
+```
+

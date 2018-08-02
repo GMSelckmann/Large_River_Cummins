@@ -143,7 +143,7 @@ plot_pct_change <- function(metrics.df, metrics.vec, metric.type) {
           axis.line = element_line(colour = "black"),
           legend.key = element_rect(fill = "white"),
           legend.title = element_blank(),
-          legend.text = element_text(size = 6),
+          legend.text = element_text(size = 8),
           legend.justification = c(1, 1),
           legend.position = c(1, 1)
           #legend.position="top"

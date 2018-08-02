@@ -1,0 +1,156 @@
+---
+title: "Untitled"
+author: "Zachary M. Smith"
+date: "July 30, 2018"
+output: html_document
+---
+
+
+## Non-Metric Multi-Dimensional Scaling (NMDS)
+
+Summarize all of the data at the genus-level for each sample (`unique_id`).
+```{r}
+gen.df <- standard.df %>% 
+  select(unique_id, year,  genus, count) %>% 
+  separate(unique_id, c("station_id", "samp_count", "date"), remove = FALSE) %>% 
+  mutate(reach = str_sub(station_id, 1, 2),
+         bank = str_sub(station_id, str_count(station_id) - 1, str_count(station_id))) %>% 
+  unite(reach_year, c("reach", "year"), remove = FALSE) %>% 
+  unite(reach_bank_year, c("reach", "bank", "year"), remove = FALSE)
+```
+
+Summarize the data by `reach` and `year` at the genus-level.
+```{r}
+year.df <- gen.df %>% 
+  group_by(unique_id, reach, year, reach_year, bank, genus) %>% 
+  summarize(count = sum(count)) %>% 
+  ungroup() %>% 
+  spread(genus, count, fill = 0)
+```
+
+This function calculates the NMDS using the __vegan__ package.
+```{r}
+run_nmds <- function(x, k) {
+  set.seed(101582) #sample(1:10^6, 1)
+  
+  y <- x %>% 
+    dplyr::select_if(is.numeric) %>% 
+    dplyr::select(-year)
+  # comm.mat  <- as.matrix(y)
+  # rownames(comm.mat) <- y$unique_id
+  nmds <- invisible(vegan::metaMDS(y, k = k, trymax = 1000))
+}
+```
+
+This function will standardize the NMDS Plots.
+```{r}
+plot_nmds <- function(x, group, k = 2) {
+  x <- x %>% 
+    dplyr::arrange(!!rlang::sym(group))
+  
+  nmds <- invisible(run_nmds(x, k))
+  
+  dimnames(nmds$points)[[1]] <- x$unique_id
+  
+  take  <- c(1, 2)
+  
+  group.vec <- x %>% 
+    dplyr::pull(!!rlang::sym(group))
+  color.length <- length(unique(group.vec))
+  viridis.vec <- viridis::viridis_pal()(color.length)
+  
+  x <- x %>% 
+    mutate(
+      group = as.factor(!!rlang::sym(group)),
+      num = as.numeric(group),
+      color = viridis.vec[as.numeric(group)])
+  
+  {
+    plot(
+      nmds,
+      choices = take,
+      # scaling = "symmetric",
+      dis = "sp",
+      type = "n",
+      xlim = c(-1, 1),
+      ylim = c(-0.8, 0.8)
+    )
+    
+    with(x, ordiellipse(
+      nmds,
+      groups = year,
+      choices = take,
+      # group.vec,
+      kind = "sd",
+      conf = 0.95,
+      draw = "polygon",
+      col = viridis.vec,
+      label = FALSE
+    )
+    )
+    
+    with(x,  points(
+      nmds,
+      display = "sites",
+      col = "black",
+      bg = color,
+      cex = 1.5,
+      pch = 22
+    ))
+    
+    legend(
+      1.0,
+      0.7,
+      legend = unique(group.vec),
+      col = viridis::viridis_pal()(color.length),
+      lty = "solid",
+      lwd = 10
+    )
+    
+    text(
+      1.3,
+      0.1,
+      paste("k =", k,
+            "\n Stress:", round(nmds$stress, 2)
+      )
+    )
+    }
+  
+}
+```
+
+### All Reaches by Year
+
+```{r}
+year.df %>% 
+  plot_nmds("year", k = 3)
+```
+
+### Knoxville by Year
+
+```{r}
+year.df %>% 
+  filter(reach == "kx") %>% 
+  plot_nmds("year", k = 2)
+```
+
+### Carderock by Year
+
+```{r}
+year.df %>% 
+  filter(reach == "cr") %>% 
+  plot_nmds("year", k = 2)
+```
+
+
+### Little Falls by Year
+
+```{r}
+year.df %>% 
+  filter(reach == "lf") %>% 
+  plot_nmds("year", k = 2)
+```
+
+
+
+

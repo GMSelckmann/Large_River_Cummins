@@ -1,0 +1,24 @@
+---
+title: "Potomac River Benthic Macroinvertebrates"
+author: "Zachary M. Smith"
+date: "August 1, 2018"
+output:
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_depth: '6'
+    toc_float: yes
+---
+
+
+```{r child = 'sections/data_prep.Rmd', eval=TRUE}
+
+```
+
+```{r child = 'sections/nmds.Rmd', eval=TRUE}
+
+```
+
+```{r child = 'sections/metric_baseline.Rmd', eval=TRUE}
+
+```

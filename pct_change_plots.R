@@ -17,8 +17,13 @@ source("pct_change.R")
 #==============================================================================
 # Create a dataframe from the metrics.list output.
 metrics.df <- do.call(rbind, metrics.list)
+write.csv(metrics.df, "metrics_5_4_17.csv", row.names = FALSE)
+#==============================================================================
+metrics.df <- read.csv("metrics_5_4_17.csv", stringsAsFactors = FALSE)
+#==============================================================================
 metrics.df <- metrics.df[!metrics.df$STATION_ID %in% "LF_2013", ]
 metrics.df <- metrics.df[metrics.df$SAMPLE_COUNT  <= 1200, ]
+metrics.vec <- names(metrics.df[, 9:ncol(metrics.df)])
 #==============================================================================
 # %change based on all values.
 all.df <- pct_change(metrics.df, metrics.vec, "ALL")

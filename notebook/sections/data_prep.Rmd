@@ -1,0 +1,90 @@
+---
+title: "Untitled"
+author: "Zachary M. Smith"
+date: "July 30, 2018"
+output: html_document
+---
+
+
+Load necessary packages.
+```{r}
+library(tidyverse)
+library(vegan)
+library(toolbox)
+library(mmir)
+```
+
+Import the taxonomic hierarchy table from the __mmir__ package. If any of the taxonomic columns contain an `NA`, the `fill_taxa()` function will fill the cell with the cell located to the left. For example, if Chironomidae taxa were only identified to the family-level, then the `tribe` and `genus` columns will be filled originally be represented by `NA` and subsequently filled with "chironomidae."
+```{r}
+master <- mmir::hier.fwmi %>% 
+  toolbox::prep_df() %>% 
+  fill_taxa(final_id, phylum:species) %>% 
+  select(final_id, phylum, class, order, family, tribe, genus)
+```
+
+Import the taxonomic data and prepare the data for analysis. `reach` and `bank` are extracted from the `station_id`.
+```{r}
+org.df <- data.table::fread(file.path(rprojroot::find_rstudio_root_file(),
+                                      "data/JIM_C_DATA_3.csv"))%>% 
+  toolbox::prep_df() %>% 
+  separate(station_id, c("station_id", "count")) %>% 
+  mutate(date = as.Date(date, "%m_%d_%Y"),
+         year = lubridate::year(date),
+         reach = str_sub(station_id, 1, 2),
+         bank = str_sub(station_id, str_count(station_id) - 1, str_count(station_id))) %>% 
+  select(reach, bank, year, final_id, reporting_value) %>% 
+  unite(unique_id, c("reach", "bank", "year"), remove = FALSE) %>% 
+  unite(reach_year, c("reach", "year"), remove = FALSE)
+```
+
+[ITIS](https://www.itis.gov/) was used to construct the __mmir__ taxonomic hierarchy table. Therefore, taxonomic data must be consistent with valid taxonomic names in ITIS. Additionally, there were some inconsistencies in the taxonomic rank of some taxa. These taxa were rolled up to the lowest common taxonomic rank.
+```{r}
+standard.df <- org.df %>% 
+  mutate(final_id = case_when(
+    final_id == "serratella_deficiens" ~ "teloganopsis",
+    final_id == "tvetenia_discoloripes" ~ "chironomidae",
+    final_id == "sphaeriidae" ~ "pisidiidae",
+    final_id == "turbellaria"  ~ "platyhelminthes",
+    final_id == "tubificidae"  ~ "oligochaeta",
+    TRUE ~ final_id
+  )) %>% 
+  left_join(master, by = "final_id") %>%
+  mutate(
+    class = if_else(phylum == "platyhelminthes", "platyhelminthes", class),
+    order = case_when(
+      class == "oligochaeta" ~ "oligochaeta",
+      phylum == "platyhelminthes" ~ "platyhelminthes",
+      TRUE ~ order
+    ),
+    family = case_when(
+      class == "oligochaeta" ~ "oligochaeta",
+      phylum == "platyhelminthes" ~ "platyhelminthes",
+      TRUE ~ family
+    ),
+    tribe = case_when(
+      family == "chironomidae" ~ "chironomidae",
+      family == "pisidiidae" ~ "pisidiidae",
+      class == "oligochaeta" ~ "oligochaeta",
+      phylum == "platyhelminthes" ~ "platyhelminthes",
+      TRUE ~ tribe
+    ),
+    genus = case_when(
+      family == "chironomidae" ~ "chironomidae",
+      family == "pisidiidae" ~ "pisidiidae",
+      class == "oligochaeta" ~ "oligochaeta",
+      phylum == "platyhelminthes" ~ "platyhelminthes",
+      TRUE ~ genus
+    ), 
+    final_id = case_when(
+      family == "chironomidae" ~ "chironomidae",
+      family == "pisidiidae" ~ "pisidiidae",
+      class == "oligochaeta" ~ "oligochaeta",
+      phylum == "platyhelminthes" ~ "platyhelminthes",
+      TRUE ~ final_id
+    )
+  ) %>% 
+  group_by_at(vars(-reporting_value)) %>% 
+  summarize(count = sum(reporting_value)) %>% 
+  ungroup()
+```
+
